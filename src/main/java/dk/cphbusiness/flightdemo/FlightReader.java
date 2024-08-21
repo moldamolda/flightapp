@@ -34,7 +34,6 @@ public class FlightReader {
 
 
             flightReader.flightsArrInFrankfurt(flightList);
-            List<DTOs.AirportTime> airportTimes = flightReader.getAirportTimesFromFile("flights.json");
            // flightReader.totalFlightTimeForSpecificAirline2(flightList);
             flightReader.flightsSortedByTimezone(flightList,"Europe/Moscow");
            /* flightInfoList.forEach(f->{
@@ -113,19 +112,6 @@ public class FlightReader {
     }
 
 
-public Map<DTOs.AirlineDTO, Double> totalFlightTimeForSpecificAirline2(List<DTOs.FlightDTO> flightList) {
-    Map<DTOs.AirlineDTO, Double> totalAirtime = flightList.stream()
-            .filter(flightDTO -> flightDTO.getAirline().equals("Lufthansa"))  // Filter for Lufthansa
-            .collect(Collectors.groupingBy(
-                    flightDTO -> flightDTO.getAirline(),  // Group by Airline name
-                    Collectors.summingDouble(flight -> {
-                        Duration duration = Duration.between(flight.getDeparture().getScheduled(), flight.getArrival().getScheduled());
-                        return duration.toMinutes();  // Convert duration to minutes
-                    })
-            ));
-    totalAirtime.forEach((airline,totalTime)-> System.out.println("Airline: "+airline+", total airtime: " +totalTime));
-    return totalAirtime;
-}
 
     public Map<DTOs.AirlineDTO, Double> totalFlightTimeForSpecificAirline2(List<DTOs.FlightDTO> flightList) {
         Map<DTOs.AirlineDTO, Double> totalAirtime = flightList.stream()
