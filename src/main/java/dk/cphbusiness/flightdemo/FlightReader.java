@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dk.cphbusiness.utils.Utils;
 import lombok.*;
 
+import javax.crypto.spec.PSource;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -30,12 +31,19 @@ public class FlightReader {
         try {
             List<DTOs.FlightDTO> flightList = flightReader.getFlightsFromFile("flights.json");
             List<DTOs.FlightInfo> flightInfoList = flightReader.getFlightInfoDetails(flightList);
+
+
+            flightReader.flightsArrInFrankfurt(flightList);
             List<DTOs.AirportTime> airportTimes = flightReader.getAirportTimesFromFile("flights.json");
            // flightReader.totalFlightTimeForSpecificAirline2(flightList);
             flightReader.flightsSortedByTimezone(flightList,"Europe/Moscow");
            /* flightInfoList.forEach(f->{
                 System.out.println("\n"+f);
             });
+
+             */
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -47,9 +55,23 @@ public class FlightReader {
 //        return flights;
 //    }
 
+    //find alle flights der har arrival airport i Frankfurt International Airport
+
+    public  List<DTOs.FlightDTO> flightsArrInFrankfurt(List<DTOs.FlightDTO> flightList) {
+        List<DTOs.FlightDTO> flightsArrInFranfurt = flightList.stream()
+                .filter(flightDTO -> flightDTO.getArrival() !=null && ("Frankfurt International Airport").equals((flightDTO.getArrival().getAirport())))
+                .collect(Collectors.toList());
+        //flightsArrInFranfurt.forEach(System.out::println);
+        flightsArrInFranfurt.forEach(flightDTO -> System.out.println(flightDTO));
+        return flightsArrInFranfurt;
+
+                }
+
+
 
     public List<DTOs.FlightInfo> getFlightInfoDetails(List<DTOs.FlightDTO> flightList) {
-        List<DTOs.FlightInfo> flightInfoList = flightList.stream().map(flight -> {
+        List<DTOs.FlightInfo> flightInfoList = flightList.stream()
+                .map(flight -> {
             Duration duration = Duration.between(flight.getDeparture().getScheduled(), flight.getArrival().getScheduled());
             DTOs.FlightInfo flightInfo = DTOs.FlightInfo.builder()
                     .name(flight.getFlight().getNumber())
@@ -73,7 +95,37 @@ public class FlightReader {
         List<DTOs.FlightDTO> flightList = Arrays.stream(flights).toList();
         return flightList;
     }
+    // calculate the average flight time for a specific airline
+    // calculate the average flight time for all flights operated by Lufthansa
+    public Map<String, Double> averageDurationPerAirline(List<DTOs.FlightDTO> flightlist){
 
+        Map<String, Double> averageCalcForFlight = flightlist.stream()
+                .collect(Collectors.groupingBy(
+                        flightDTO -> String.valueOf(flightDTO.getAirline()),
+                        Collectors.averagingDouble(flight -> {
+                            Duration duration = Duration.between(flight.getDeparture().getScheduled(), flight.getArrival().getScheduled());
+                            return duration.toMinutes();
+                        })
+                ));
+
+        averageCalcForFlight.forEach((airline,averagecalcTime) -> System.out.println("Airline: "+airline+ ",  Average time per flight: " +averagecalcTime));
+        return averageCalcForFlight;
+    }
+
+
+public Map<DTOs.AirlineDTO, Double> totalFlightTimeForSpecificAirline2(List<DTOs.FlightDTO> flightList) {
+    Map<DTOs.AirlineDTO, Double> totalAirtime = flightList.stream()
+            .filter(flightDTO -> flightDTO.getAirline().equals("Lufthansa"))  // Filter for Lufthansa
+            .collect(Collectors.groupingBy(
+                    flightDTO -> flightDTO.getAirline(),  // Group by Airline name
+                    Collectors.summingDouble(flight -> {
+                        Duration duration = Duration.between(flight.getDeparture().getScheduled(), flight.getArrival().getScheduled());
+                        return duration.toMinutes();  // Convert duration to minutes
+                    })
+            ));
+    totalAirtime.forEach((airline,totalTime)-> System.out.println("Airline: "+airline+", total airtime: " +totalTime));
+    return totalAirtime;
+}
 
     public Map<DTOs.AirlineDTO, Double> totalFlightTimeForSpecificAirline2(List<DTOs.FlightDTO> flightList) {
         Map<DTOs.AirlineDTO, Double> totalAirtime = flightList.stream()
